@@ -262,7 +262,8 @@ function getFilteredCharacters() {
         character.name,
         character.race,
         character.affiliation,
-        character.ability,
+        character.ability?.name,
+        character.ability?.description,
         character.overview,
         character.history,
         character.equipment,
@@ -360,8 +361,6 @@ function createCharacterSheet(character) {
     ["Afiliacion", character.affiliation],
   ];
 
-  if (character.race === "Quincy") rows.push(["Habilidad personal", character.ability]);
-
   rows.push(
     ["Vida", character.stats.health],
     ["Ataque", character.stats.attack],
@@ -410,6 +409,24 @@ function createDetailsPanel(character) {
       </section>
     `
     : "";
+  const personalAbilitySection =
+    character.race === "Quincy"
+      ? `
+        <section class="article-section">
+          <h3>Habilidad personal</h3>
+          <dl class="zanpakuto-list">
+            <div>
+              <dt>Nombre</dt>
+              <dd>${formatText(character.ability.name)}</dd>
+            </div>
+            <div>
+              <dt>Descripcion</dt>
+              <dd>${formatText(character.ability.description)}</dd>
+            </div>
+          </dl>
+        </section>
+      `
+      : "";
 
   panel.innerHTML = `
     <section class="article-section">
@@ -428,6 +445,7 @@ function createDetailsPanel(character) {
       <h3>Habilidades de raza</h3>
       <p>${formatText(character.abilities)}</p>
     </section>
+    ${personalAbilitySection}
     ${zanpakutoSections}
   `;
 
@@ -455,12 +473,19 @@ function startEditor(characterId) {
 }
 
 function createEditor(character) {
+  if (!character && editingCharacterId) {
+    showNotice("No pude encontrar esta ficha para editarla. Refresca la pagina e intenta otra vez.");
+    editingCharacterId = null;
+    renderWikiPage();
+    return document.createElement("div");
+  }
+
   const form = els.editorTemplate.content.firstElementChild.cloneNode(true);
   const data = character || {
     name: "",
     race: currentPage === "NPC" ? "Quincy" : currentPage,
     affiliation: currentPage,
-    ability: "",
+    ability: { name: "", description: "" },
     image: "",
     notes: "",
     overview: "",
@@ -475,7 +500,8 @@ function createEditor(character) {
   form.elements.name.value = normalizedData.name;
   form.elements.race.value = normalizedData.race;
   form.elements.affiliation.value = normalizedData.affiliation;
-  form.elements.ability.value = normalizedData.ability;
+  form.elements.personalAbilityName.value = normalizedData.ability.name;
+  form.elements.personalAbilityDescription.value = normalizedData.ability.description;
   form.elements.health.value = normalizedData.stats.health;
   form.elements.attack.value = normalizedData.stats.attack;
   form.elements.defense.value = normalizedData.stats.defense;
@@ -501,6 +527,10 @@ function createEditor(character) {
     renderWikiPage();
   });
   form.querySelector(".delete-character").addEventListener("click", async () => {
+    if (!character?.id) {
+      showNotice("No pude encontrar esta ficha para eliminarla.");
+      return;
+    }
     await deleteCharacter(character.id);
   });
   form.addEventListener("submit", (event) => saveCharacter(event, character));
@@ -510,7 +540,10 @@ function createEditor(character) {
 
 async function saveCharacter(event, existingCharacter) {
   event.preventDefault();
-  if (!isEditor()) return;
+  if (!isEditor()) {
+    showNotice("Tu cuenta no tiene permisos para editar fichas.");
+    return;
+  }
 
   const form = event.currentTarget;
   const race = form.elements.race.value;
@@ -519,7 +552,13 @@ async function saveCharacter(event, existingCharacter) {
     name: form.elements.name.value.trim(),
     race,
     affiliation: form.elements.affiliation.value,
-    ability: race === "Quincy" ? form.elements.ability.value.trim() : "",
+    ability:
+      race === "Quincy"
+        ? {
+            name: form.elements.personalAbilityName.value.trim(),
+            description: form.elements.personalAbilityDescription.value.trim(),
+          }
+        : { name: "", description: "" },
     image: form.elements.image.value.trim(),
     notes: form.elements.notes.value.trim(),
     overview: form.elements.overview.value.trim(),
@@ -557,7 +596,10 @@ async function saveCharacter(event, existingCharacter) {
 }
 
 async function deleteCharacter(characterId) {
-  if (!isEditor()) return;
+  if (!isEditor()) {
+    showNotice("Tu cuenta no tiene permisos para eliminar fichas.");
+    return;
+  }
 
   const { error } = await db.from("characters").delete().eq("id", characterId);
   if (error) {
@@ -713,9 +755,10 @@ function renderAdminCharacterIndex() {
 
 function syncRaceFields(form) {
   const isQuincy = form.elements.race.value === "Quincy";
-  form.querySelector(".ability-field").classList.toggle("hidden", !isQuincy);
+  form.querySelectorAll(".ability-field").forEach((field) => field.classList.toggle("hidden", !isQuincy));
   form.querySelector(".zanpakuto-fields").classList.toggle("hidden", isQuincy);
-  form.elements.ability.required = isQuincy;
+  form.elements.personalAbilityName.required = isQuincy;
+  form.elements.personalAbilityDescription.required = isQuincy;
 }
 
 function showNotice(message) {

@@ -113,8 +113,12 @@
             </select>
           </label>
           <label class="ability-field">
-            Habilidad personal
-            <input name="ability" required />
+            Nombre de habilidad personal
+            <input name="personalAbilityName" required />
+          </label>
+          <label class="wide-field ability-field">
+            Descripcion de habilidad personal
+            <textarea name="personalAbilityDescription" rows="4" required></textarea>
           </label>
           <label>
             Vida
@@ -191,7 +195,7 @@
     </template>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=8"></script>
-    <script type="module" src="app.js?v=8"></script>
+    <script src="supabase-config.js?v=9"></script>
+    <script type="module" src="app.js?v=9"></script>
   </body>
 </html>

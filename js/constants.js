@@ -10,11 +10,14 @@ export const pageCopy = {
 
 export const starterCharacters = [
   {
-    id: "sample-uryu-ishida",
+    id: "00000000-0000-4000-8000-000000000001",
     name: "Uryu Ishida",
     race: "Quincy",
     affiliation: "Quincy",
-    ability: "Heilig Pfeil precision and spiritual archery",
+    ability: {
+      name: "Heilig Pfeil",
+      description: "Precision and spiritual archery.",
+    },
     image: "assets/uryu-reference.png",
     notes: "Child | 2001 | 2003",
     overview: "A precise Quincy archer with disciplined spiritual control and a calm tactical style.",
@@ -27,7 +30,7 @@ export const starterCharacters = [
     updatedAt: new Date().toISOString(),
   },
   {
-    id: "sample-kaien-shiba",
+    id: "00000000-0000-4000-8000-000000000002",
     name: "Kaien Shiba",
     race: "Shinigami",
     affiliation: "Shinigami",
@@ -49,7 +52,7 @@ export const starterCharacters = [
     updatedAt: new Date().toISOString(),
   },
   {
-    id: "sample-nelliel",
+    id: "00000000-0000-4000-8000-000000000003",
     name: "Nelliel Tu Odelschwanck",
     race: "Arrancar",
     affiliation: "Arrancar",

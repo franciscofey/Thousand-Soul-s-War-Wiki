@@ -172,7 +172,7 @@ insert into public.characters (
   zanpakuto_name, activation_command, shikai, bankai, attack, defense, speed, health, reiatsu, updated_by_name
 ) values
 (
-  'Uryu Ishida', 'Quincy', 'Quincy', 'Heilig Pfeil precision and spiritual archery', 'assets/uryu-reference.png',
+  'Uryu Ishida', 'Quincy', 'Quincy', '{"name":"Heilig Pfeil","description":"Precision and spiritual archery."}', 'assets/uryu-reference.png',
   'Child | 2001 | 2003',
   'A precise Quincy archer with disciplined spiritual control and a calm tactical style.',
   'Raised within the Quincy tradition, Uryu keeps detailed records of his training, rivalries, and wartime decisions.',

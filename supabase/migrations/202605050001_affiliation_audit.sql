@@ -13,3 +13,9 @@ where affiliation not in ('Quincy', 'Shinigami', 'Arrancar', 'NPC');
 update public.characters
 set ability = ''
 where race in ('Shinigami', 'Arrancar');
+
+update public.characters
+set ability = jsonb_build_object('name', ability, 'description', '')::text
+where race = 'Quincy'
+  and ability <> ''
+  and left(trim(ability), 1) <> '{';

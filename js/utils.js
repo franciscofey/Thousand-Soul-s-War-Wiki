@@ -17,11 +17,12 @@ export function normalizeAffiliation(affiliation, race) {
 
 export function normalizeCharacter(character) {
   const normalizedAffiliation = normalizeAffiliation(character.affiliation, character.race);
+  const personalAbility = normalizePersonalAbility(character.ability);
 
   return {
     ...character,
     affiliation: normalizedAffiliation,
-    ability: character.race === "Quincy" ? character.ability || "" : "",
+    ability: character.race === "Quincy" ? personalAbility : { name: "", description: "" },
     overview: character.overview || "",
     history: character.history || "",
     equipment: character.equipment || "",
@@ -75,13 +76,38 @@ export function characterFromRow(row) {
   });
 }
 
+export function normalizePersonalAbility(ability) {
+  if (!ability) return { name: "", description: "" };
+  if (typeof ability === "object") {
+    return {
+      name: ability.name || "",
+      description: ability.description || "",
+    };
+  }
+  try {
+    const parsed = JSON.parse(ability);
+    if (parsed && typeof parsed === "object") {
+      return {
+        name: parsed.name || "",
+        description: parsed.description || "",
+      };
+    }
+  } catch (_error) {
+    // Old rows stored this as plain text.
+  }
+  return {
+    name: ability,
+    description: "",
+  };
+}
+
 export function characterToRow(character, currentUser) {
   return {
     id: character.id,
     name: character.name,
     race: character.race,
     affiliation: character.affiliation,
-    ability: character.race === "Quincy" ? character.ability : "",
+    ability: character.race === "Quincy" ? JSON.stringify(character.ability) : "",
     image: character.image,
     notes: character.notes,
     overview: character.overview,
