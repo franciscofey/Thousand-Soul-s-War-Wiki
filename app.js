@@ -87,7 +87,7 @@ const els = {
   loginEmail: document.querySelector("#loginEmail"),
   loginPassword: document.querySelector("#loginPassword"),
   loginError: document.querySelector("#loginError"),
-  navButtons: [...document.querySelectorAll(".nav-link")],
+  navButtons: [...document.querySelectorAll("#mainNav .nav-link")],
   adminNav: document.querySelector("#adminNav"),
   authArea: document.querySelector("#authArea"),
   loginToggle: document.querySelector("#loginToggle"),
@@ -205,9 +205,13 @@ async function handleLogin(event) {
   currentSession = data.session;
   const profileError = await refreshCurrentUser();
   if (profileError || !currentUser) {
-    els.loginError.textContent =
-      "Login worked, but this account does not have a profile/role yet. Run the profile SQL setup in Supabase.";
-    return;
+    currentUser = {
+      id: data.session.user.id,
+      email: data.session.user.email,
+      username: data.session.user.email,
+      role: "user",
+    };
+    showNotice("Login worked, but this account does not have an admin role yet.");
   }
 
   els.loginForm.reset();
@@ -264,6 +268,10 @@ async function handleProfileSave(event) {
 }
 
 function render() {
+  if (!factionCopy[currentPage] && currentPage !== "Admin") {
+    currentPage = "Shinigamis";
+  }
+
   if (!currentUser && currentPage === "Admin") currentPage = "Shinigamis";
 
   els.appPage.classList.remove("hidden");
