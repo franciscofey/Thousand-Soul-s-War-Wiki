@@ -155,7 +155,7 @@ function bindEvents() {
 async function refreshCurrentUser() {
   if (!currentSession?.user) {
     currentUser = null;
-    return;
+    return null;
   }
 
   const { data, error } = await db
@@ -166,11 +166,11 @@ async function refreshCurrentUser() {
 
   if (error) {
     currentUser = null;
-    showNotice(error.message);
-    return;
+    return error;
   }
 
   currentUser = data;
+  return null;
 }
 
 async function loadCharacters() {
@@ -203,7 +203,13 @@ async function handleLogin(event) {
   }
 
   currentSession = data.session;
-  await refreshCurrentUser();
+  const profileError = await refreshCurrentUser();
+  if (profileError || !currentUser) {
+    els.loginError.textContent =
+      "Login worked, but this account does not have a profile/role yet. Run the profile SQL setup in Supabase.";
+    return;
+  }
+
   els.loginForm.reset();
   els.loginPage.classList.add("hidden");
   els.loginError.textContent = "";
