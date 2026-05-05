@@ -30,6 +30,7 @@ create table if not exists public.characters (
   speed integer not null default 0,
   health integer not null default 0,
   reiatsu integer not null default 0,
+  updated_by_name text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -168,19 +169,19 @@ with check (public.is_main_admin());
 
 insert into public.characters (
   name, race, affiliation, ability, image, notes, overview, history, equipment, abilities,
-  zanpakuto_name, activation_command, shikai, bankai, attack, defense, speed, health, reiatsu
+  zanpakuto_name, activation_command, shikai, bankai, attack, defense, speed, health, reiatsu, updated_by_name
 ) values
 (
-  'Uryu Ishida', 'Quincy', 'Wandenreich', 'Heilig Pfeil precision and spiritual archery', 'assets/uryu-reference.png',
+  'Uryu Ishida', 'Quincy', 'Quincy', 'Heilig Pfeil precision and spiritual archery', 'assets/uryu-reference.png',
   'Child | 2001 | 2003',
   'A precise Quincy archer with disciplined spiritual control and a calm tactical style.',
   'Raised within the Quincy tradition, Uryu keeps detailed records of his training, rivalries, and wartime decisions.',
   'Quincy bow, spiritual arrows, Seele Schneider, and utility items for ranged engagements.',
   'Expert marksmanship, Hirenkyaku movement, spiritual thread perception, and high reiatsu control.',
-  '', '', '', '', 82, 68, 76, 64, 88
+  '', '', '', '', 82, 68, 76, 64, 88, 'Sistema'
 ),
 (
-  'Kaien Shiba', 'Shinigami', 'Gotei 13', 'Water-type zanpakuto techniques', '',
+  'Kaien Shiba', 'Shinigami', 'Shinigami', '', '',
   'Lieutenant archive profile',
   'A loyal Shinigami officer known for balanced combat instincts and strong command presence.',
   'Served as a lieutenant in the Gotei 13 and left a record of mentorship, duty, and sacrifice.',
@@ -188,10 +189,10 @@ insert into public.characters (
   'Zanjutsu, Hoho, spiritual pressure control, and water-based release techniques.',
   'Nejibana', 'Rankle the seas and skies',
   'Nejibana changes shape and channels water into piercing and sweeping attacks.',
-  'Unknown or unrecorded.', 72, 70, 74, 78, 80
+  'Unknown or unrecorded.', 72, 70, 74, 78, 80, 'Sistema'
 ),
 (
-  'Nelliel Tu Odelschwanck', 'Arrancar', 'Hueco Mundo', 'Cero Doble and lance combat', '',
+  'Nelliel Tu Odelschwanck', 'Arrancar', 'Arrancar', '', '',
   'Former Espada profile',
   'A powerful Arrancar with a composed temperament and tremendous spiritual pressure.',
   'Former Espada records describe a warrior displaced by betrayal and later defined by restraint.',
@@ -200,7 +201,7 @@ insert into public.characters (
   'Gamuza', 'Declare',
   'Arrancar do not use Shikai; this field can describe Resurreccion notes if desired.',
   'Arrancar do not use Bankai; this field can hold Segunda Etapa or advanced release notes.',
-  88, 83, 78, 86, 90
+  88, 83, 78, 86, 90, 'Sistema'
 );
 
 -- After creating the three Auth users in Supabase, run this once:

@@ -1,82 +1,24 @@
-const SUPABASE_IS_CONFIGURED =
-  window.TSW_SUPABASE_URL &&
-  window.TSW_SUPABASE_ANON_KEY &&
-  !window.TSW_SUPABASE_URL.includes("YOUR_PROJECT_URL") &&
-  !window.TSW_SUPABASE_ANON_KEY.includes("YOUR_SUPABASE_ANON_KEY");
-
-const db = SUPABASE_IS_CONFIGURED
-  ? window.supabase.createClient(window.TSW_SUPABASE_URL, window.TSW_SUPABASE_ANON_KEY)
-  : null;
-
-const starterCharacters = [
-  {
-    id: makeId(),
-    name: "Uryu Ishida",
-    race: "Quincy",
-    affiliation: "Wandenreich",
-    ability: "Heilig Pfeil precision and spiritual archery",
-    image: "assets/uryu-reference.png",
-    notes: "Child | 2001 | 2003",
-    overview: "A precise Quincy archer with disciplined spiritual control and a calm tactical style.",
-    history: "Raised within the Quincy tradition, Uryu keeps detailed records of his training, rivalries, and wartime decisions.",
-    equipment: "Quincy bow, spiritual arrows, Seele Schneider, and utility items for ranged engagements.",
-    abilities: "Expert marksmanship, Hirenkyaku movement, spiritual thread perception, and high reiatsu control.",
-    zanpakuto: { name: "", activationCommand: "", shikai: "", bankai: "" },
-    stats: { attack: 82, defense: 68, speed: 76, health: 64, reiatsu: 88 },
-  },
-  {
-    id: makeId(),
-    name: "Kaien Shiba",
-    race: "Shinigami",
-    affiliation: "Gotei 13",
-    ability: "Water-type zanpakuto techniques",
-    image: "",
-    notes: "Lieutenant archive profile",
-    overview: "A loyal Shinigami officer known for balanced combat instincts and strong command presence.",
-    history: "Served as a lieutenant in the Gotei 13 and left a record of mentorship, duty, and sacrifice.",
-    equipment: "Standard Shinigami robes, zanpakuto, and division field gear.",
-    abilities: "Zanjutsu, Hoho, spiritual pressure control, and water-based release techniques.",
-    zanpakuto: {
-      name: "Nejibana",
-      activationCommand: "Rankle the seas and skies",
-      shikai: "Nejibana changes shape and channels water into piercing and sweeping attacks.",
-      bankai: "Unknown or unrecorded.",
-    },
-    stats: { attack: 72, defense: 70, speed: 74, health: 78, reiatsu: 80 },
-  },
-  {
-    id: makeId(),
-    name: "Nelliel Tu Odelschwanck",
-    race: "Arrancar",
-    affiliation: "Hueco Mundo",
-    ability: "Cero Doble and lance combat",
-    image: "",
-    notes: "Former Espada profile",
-    overview: "A powerful Arrancar with a composed temperament and tremendous spiritual pressure.",
-    history: "Former Espada records describe a warrior displaced by betrayal and later defined by restraint.",
-    equipment: "Arrancar uniform, broken mask remains, and resurreccion weaponry.",
-    abilities: "Cero Doble, high-speed combat, lance techniques, Hierro, and overwhelming reiatsu.",
-    zanpakuto: {
-      name: "Gamuza",
-      activationCommand: "Declare",
-      shikai: "Arrancar do not use Shikai; this field can describe Resurreccion notes if desired.",
-      bankai: "Arrancar do not use Bankai; this field can hold Segunda Etapa or advanced release notes.",
-    },
-    stats: { attack: 88, defense: 83, speed: 78, health: 86, reiatsu: 90 },
-  },
-];
-
-const factionCopy = {
-  Shinigamis: "Soul Reaper records, divisions, zanpakuto details, and combat sheets.",
-  Quincy: "Quincy bloodline profiles, affiliations, spiritual weapons, and techniques.",
-  Arrancar: "Hueco Mundo files for Arrancar, resurrecion notes, and battle statistics.",
-};
+import { pageCopy, starterCharacters } from "./js/constants.js";
+import { db, SUPABASE_IS_CONFIGURED } from "./js/supabaseClient.js";
+import {
+  characterFromRow,
+  characterToRow,
+  clearSupabaseSessionCache,
+  escapeHtml,
+  formatSpanishDate,
+  formatText,
+  getFunctionErrorMessage,
+  getInitials,
+  makeId,
+  normalizeCharacter,
+  supportsZanpakuto,
+} from "./js/utils.js";
 
 let profiles = [];
 let characters = starterCharacters.map(normalizeCharacter);
 let currentUser = null;
 let currentSession = null;
-let currentPage = "Shinigamis";
+let currentPage = "Shinigami";
 let selectedCharacterId = null;
 let editingCharacterId = null;
 
@@ -233,9 +175,7 @@ async function handleLogout(event) {
 
   if (db) {
     const { error } = await db.auth.signOut();
-    if (error) {
-      await db.auth.signOut({ scope: "local" });
-    }
+    if (error) await db.auth.signOut({ scope: "local" });
     clearSupabaseSessionCache();
   }
 }
@@ -268,11 +208,8 @@ async function handleProfileSave(event) {
 }
 
 function render() {
-  if (!factionCopy[currentPage] && currentPage !== "Admin") {
-    currentPage = "Shinigamis";
-  }
-
-  if (!currentUser && currentPage === "Admin") currentPage = "Shinigamis";
+  if (!pageCopy[currentPage] && currentPage !== "Admin") currentPage = "Shinigami";
+  if (!currentUser && currentPage === "Admin") currentPage = "Shinigami";
 
   els.appPage.classList.remove("hidden");
   els.profilePanel.classList.add("hidden");
@@ -307,10 +244,6 @@ function render() {
   renderWikiPage();
 }
 
-function singularRace(page) {
-  return page === "Shinigamis" ? "Shinigami" : page;
-}
-
 function isEditor() {
   return currentUser && ["admin", "main-admin"].includes(currentUser.role);
 }
@@ -322,7 +255,7 @@ function isMainAdmin() {
 function getFilteredCharacters() {
   const query = els.searchInput.value.trim().toLowerCase();
   return characters
-    .filter((character) => character.race === singularRace(currentPage))
+    .filter((character) => character.affiliation === currentPage)
     .filter((character) => {
       if (!query) return true;
       const searchable = [
@@ -364,7 +297,7 @@ function renderCharacterList() {
       <span class="tab-avatar">${escapeHtml(getInitials(character.name))}</span>
       <span>
         <span class="tab-name">${escapeHtml(character.name)}</span>
-        <span class="tab-meta">${escapeHtml(character.affiliation)}</span>
+        <span class="tab-meta">${escapeHtml(character.race)}</span>
       </span>
     `;
     button.addEventListener("click", () => {
@@ -386,7 +319,7 @@ function renderWikiPage() {
   heading.innerHTML = `
     <div>
       <h2>${currentPage}</h2>
-      <p>${factionCopy[currentPage]}</p>
+      <p>${pageCopy[currentPage]}</p>
     </div>
   `;
   els.wikiPage.append(heading);
@@ -397,7 +330,7 @@ function renderWikiPage() {
   }
 
   if (!selected) {
-    els.wikiPage.insertAdjacentHTML("beforeend", '<div class="empty-state">Create the first file for this faction.</div>');
+    els.wikiPage.insertAdjacentHTML("beforeend", '<div class="empty-state">Create the first file for this affiliation.</div>');
     return;
   }
 
@@ -422,19 +355,27 @@ function createCharacterSheet(character) {
   }
 
   const facts = node.querySelector(".facts");
-  [
+  const rows = [
     ["Raza", character.race],
-    ["Affiliation", character.affiliation],
-    ["Habilidad personal", character.ability],
-    ["Ataque", character.stats.attack],
-    ["Defensa", character.stats.defense],
-    ["Velocidad", character.stats.speed],
+    ["Afiliacion", character.affiliation],
+  ];
+
+  if (character.race === "Quincy") rows.push(["Habilidad personal", character.ability]);
+
+  rows.push(
     ["Vida", character.stats.health],
+    ["Ataque", character.stats.attack],
+    ["Bloqueo", character.stats.defense],
+    ["Velocidad", character.stats.speed],
     ["Reiatsu", character.stats.reiatsu],
-  ].forEach(([label, value]) => {
+    ["Ultima edicion", character.updatedByName],
+    ["Fecha", formatSpanishDate(character.updatedAt)],
+  );
+
+  rows.forEach(([label, value]) => {
     const row = document.createElement("div");
     row.className = "fact-row";
-    row.innerHTML = `<div class="fact-label">${label}</div><div class="fact-value">${escapeHtml(String(value))}</div>`;
+    row.innerHTML = `<div class="fact-label">${label}</div><div class="fact-value">${escapeHtml(String(value || ""))}</div>`;
     facts.append(row);
   });
 
@@ -450,7 +391,7 @@ function createDetailsPanel(character) {
         <h3>Zanpakuto</h3>
         <dl class="zanpakuto-list">
           <div>
-            <dt>Nombre de Zanpakuto</dt>
+            <dt>Nombre</dt>
             <dd>${formatText(character.zanpakuto.name)}</dd>
           </div>
           <div>
@@ -472,19 +413,19 @@ function createDetailsPanel(character) {
 
   panel.innerHTML = `
     <section class="article-section">
-      <h3>Overview</h3>
+      <h3>Descripcion general</h3>
       <p>${formatText(character.overview)}</p>
     </section>
     <section class="article-section">
-      <h3>History</h3>
+      <h3>Historia</h3>
       <p>${formatText(character.history)}</p>
     </section>
     <section class="article-section">
-      <h3>Equipment</h3>
+      <h3>Equipamento</h3>
       <p>${formatText(character.equipment)}</p>
     </section>
     <section class="article-section">
-      <h3>Habilidades</h3>
+      <h3>Habilidades de raza</h3>
       <p>${formatText(character.abilities)}</p>
     </section>
     ${zanpakutoSections}
@@ -517,8 +458,8 @@ function createEditor(character) {
   const form = els.editorTemplate.content.firstElementChild.cloneNode(true);
   const data = character || {
     name: "",
-    race: singularRace(currentPage),
-    affiliation: "",
+    race: currentPage === "NPC" ? "Quincy" : currentPage,
+    affiliation: currentPage,
     ability: "",
     image: "",
     notes: "",
@@ -527,7 +468,7 @@ function createEditor(character) {
     equipment: "",
     abilities: "",
     zanpakuto: { name: "", activationCommand: "", shikai: "", bankai: "" },
-    stats: { attack: 50, defense: 50, speed: 50, health: 50, reiatsu: 50 },
+    stats: { health: 50, attack: 50, defense: 50, speed: 50, reiatsu: 50 },
   };
   const normalizedData = normalizeCharacter(data);
 
@@ -535,10 +476,10 @@ function createEditor(character) {
   form.elements.race.value = normalizedData.race;
   form.elements.affiliation.value = normalizedData.affiliation;
   form.elements.ability.value = normalizedData.ability;
+  form.elements.health.value = normalizedData.stats.health;
   form.elements.attack.value = normalizedData.stats.attack;
   form.elements.defense.value = normalizedData.stats.defense;
   form.elements.speed.value = normalizedData.stats.speed;
-  form.elements.health.value = normalizedData.stats.health;
   form.elements.reiatsu.value = normalizedData.stats.reiatsu;
   form.elements.image.value = normalizedData.image;
   form.elements.notes.value = normalizedData.notes;
@@ -551,8 +492,8 @@ function createEditor(character) {
   form.elements.shikai.value = normalizedData.zanpakuto.shikai;
   form.elements.bankai.value = normalizedData.zanpakuto.bankai;
 
-  syncZanpakutoFields(form);
-  form.elements.race.addEventListener("change", () => syncZanpakutoFields(form));
+  syncRaceFields(form);
+  form.elements.race.addEventListener("change", () => syncRaceFields(form));
 
   form.querySelector(".delete-character").classList.toggle("hidden", !character);
   form.querySelector(".cancel-edit").addEventListener("click", () => {
@@ -572,19 +513,20 @@ async function saveCharacter(event, existingCharacter) {
   if (!isEditor()) return;
 
   const form = event.currentTarget;
+  const race = form.elements.race.value;
   const updated = {
     id: existingCharacter?.id || makeId(),
     name: form.elements.name.value.trim(),
-    race: form.elements.race.value,
-    affiliation: form.elements.affiliation.value.trim(),
-    ability: form.elements.ability.value.trim(),
+    race,
+    affiliation: form.elements.affiliation.value,
+    ability: race === "Quincy" ? form.elements.ability.value.trim() : "",
     image: form.elements.image.value.trim(),
     notes: form.elements.notes.value.trim(),
     overview: form.elements.overview.value.trim(),
     history: form.elements.history.value.trim(),
     equipment: form.elements.equipment.value.trim(),
     abilities: form.elements.abilities.value.trim(),
-    zanpakuto: supportsZanpakuto(form.elements.race.value)
+    zanpakuto: supportsZanpakuto(race)
       ? {
           name: form.elements.zanpakutoName.value.trim(),
           activationCommand: form.elements.activationCommand.value.trim(),
@@ -593,22 +535,22 @@ async function saveCharacter(event, existingCharacter) {
         }
       : { name: "", activationCommand: "", shikai: "", bankai: "" },
     stats: {
+      health: Number(form.elements.health.value),
       attack: Number(form.elements.attack.value),
       defense: Number(form.elements.defense.value),
       speed: Number(form.elements.speed.value),
-      health: Number(form.elements.health.value),
       reiatsu: Number(form.elements.reiatsu.value),
     },
   };
 
-  const row = characterToRow(updated);
+  const row = characterToRow(updated, currentUser);
   const { error } = await db.from("characters").upsert(row);
   if (error) {
     showNotice(error.message);
     return;
   }
 
-  currentPage = updated.race === "Shinigami" ? "Shinigamis" : updated.race;
+  currentPage = updated.affiliation;
   selectedCharacterId = updated.id;
   editingCharacterId = null;
   await loadCharacters();
@@ -630,7 +572,7 @@ async function deleteCharacter(characterId) {
 
 function renderAdminPage() {
   if (!isMainAdmin()) {
-    currentPage = "Shinigamis";
+    currentPage = "Shinigami";
     render();
     return;
   }
@@ -691,7 +633,7 @@ async function handleCreateAccount(event) {
   });
 
   if (error) {
-    showNotice(error.message);
+    showNotice(getFunctionErrorMessage(error, "create-user"));
     return;
   }
 
@@ -731,7 +673,7 @@ function renderAccounts() {
     deleteButton.addEventListener("click", async () => {
       const { error } = await db.functions.invoke("delete-user", { body: { userId: profile.id } });
       if (error) {
-        showNotice(error.message);
+        showNotice(getFunctionErrorMessage(error, "delete-user"));
         return;
       }
       await loadProfiles();
@@ -751,7 +693,7 @@ function renderAdminCharacterIndex() {
     row.innerHTML = `
       <div>
         <strong>${escapeHtml(character.name)}</strong>
-        <span>${escapeHtml(character.race)} - ${escapeHtml(character.affiliation)}</span>
+        <span>${escapeHtml(character.affiliation)} - ${escapeHtml(character.race)}</span>
       </div>
     `;
     const editButton = document.createElement("button");
@@ -759,7 +701,7 @@ function renderAdminCharacterIndex() {
     editButton.type = "button";
     editButton.textContent = "Edit";
     editButton.addEventListener("click", () => {
-      currentPage = character.race === "Shinigami" ? "Shinigamis" : character.race;
+      currentPage = character.affiliation;
       selectedCharacterId = character.id;
       startEditor(character.id);
       render();
@@ -769,129 +711,15 @@ function renderAdminCharacterIndex() {
   });
 }
 
-function characterFromRow(row) {
-  return normalizeCharacter({
-    id: row.id,
-    name: row.name,
-    race: row.race,
-    affiliation: row.affiliation,
-    ability: row.ability,
-    image: row.image,
-    notes: row.notes,
-    overview: row.overview,
-    history: row.history,
-    equipment: row.equipment,
-    abilities: row.abilities,
-    zanpakuto: {
-      name: row.zanpakuto_name,
-      activationCommand: row.activation_command,
-      shikai: row.shikai,
-      bankai: row.bankai,
-    },
-    stats: {
-      attack: row.attack,
-      defense: row.defense,
-      speed: row.speed,
-      health: row.health,
-      reiatsu: row.reiatsu,
-    },
-  });
-}
-
-function characterToRow(character) {
-  return {
-    id: character.id,
-    name: character.name,
-    race: character.race,
-    affiliation: character.affiliation,
-    ability: character.ability,
-    image: character.image,
-    notes: character.notes,
-    overview: character.overview,
-    history: character.history,
-    equipment: character.equipment,
-    abilities: character.abilities,
-    zanpakuto_name: character.zanpakuto.name,
-    activation_command: character.zanpakuto.activationCommand,
-    shikai: character.zanpakuto.shikai,
-    bankai: character.zanpakuto.bankai,
-    attack: character.stats.attack,
-    defense: character.stats.defense,
-    speed: character.stats.speed,
-    health: character.stats.health,
-    reiatsu: character.stats.reiatsu,
-  };
-}
-
-function getInitials(name) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0].toUpperCase())
-    .join("");
-}
-
-function normalizeCharacter(character) {
-  return {
-    ...character,
-    overview: character.overview || "",
-    history: character.history || "",
-    equipment: character.equipment || "",
-    abilities: character.abilities || character.ability || "",
-    zanpakuto: {
-      name: character.zanpakuto?.name || "",
-      activationCommand: character.zanpakuto?.activationCommand || "",
-      shikai: character.zanpakuto?.shikai || "",
-      bankai: character.zanpakuto?.bankai || "",
-    },
-    stats: {
-      attack: Number(character.stats?.attack || 0),
-      defense: Number(character.stats?.defense || 0),
-      speed: Number(character.stats?.speed || 0),
-      health: Number(character.stats?.health || 0),
-      reiatsu: Number(character.stats?.reiatsu || 0),
-    },
-  };
-}
-
-function supportsZanpakuto(race) {
-  return race === "Shinigami" || race === "Arrancar";
-}
-
-function syncZanpakutoFields(form) {
-  form.querySelector(".zanpakuto-fields").classList.toggle("hidden", !supportsZanpakuto(form.elements.race.value));
-}
-
-function formatText(value) {
-  return escapeHtml(value || "").replace(/\n/g, "<br>");
+function syncRaceFields(form) {
+  const isQuincy = form.elements.race.value === "Quincy";
+  form.querySelector(".ability-field").classList.toggle("hidden", !isQuincy);
+  form.querySelector(".zanpakuto-fields").classList.toggle("hidden", isQuincy);
+  form.elements.ability.required = isQuincy;
 }
 
 function showNotice(message) {
   els.characterList.innerHTML = `<div class="empty-state">${escapeHtml(message)}</div>`;
-}
-
-function clearSupabaseSessionCache() {
-  Object.keys(localStorage)
-    .filter((key) => key.startsWith("sb-") && key.endsWith("-auth-token"))
-    .forEach((key) => localStorage.removeItem(key));
-}
-
-function makeId() {
-  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
-  return `tsw-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (character) => {
-    return {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#039;",
-    }[character];
-  });
 }
 
 init();

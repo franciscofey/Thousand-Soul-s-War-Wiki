@@ -1,0 +1,73 @@
+export const AFFILIATIONS = ["Quincy", "Shinigami", "Arrancar", "NPC"];
+export const RACES = ["Shinigami", "Quincy", "Arrancar"];
+
+export const pageCopy = {
+  Shinigami: "Registros de Shinigami, divisiones, zanpakuto y fichas de combate.",
+  Quincy: "Perfiles Quincy, armas espirituales, afiliaciones y tecnicas.",
+  Arrancar: "Archivos de Hueco Mundo, resurreccion y estadisticas de batalla.",
+  NPC: "Personajes no jugadores, contactos narrativos y perfiles secundarios.",
+};
+
+export const starterCharacters = [
+  {
+    id: "sample-uryu-ishida",
+    name: "Uryu Ishida",
+    race: "Quincy",
+    affiliation: "Quincy",
+    ability: "Heilig Pfeil precision and spiritual archery",
+    image: "assets/uryu-reference.png",
+    notes: "Child | 2001 | 2003",
+    overview: "A precise Quincy archer with disciplined spiritual control and a calm tactical style.",
+    history: "Raised within the Quincy tradition, Uryu keeps detailed records of his training, rivalries, and wartime decisions.",
+    equipment: "Quincy bow, spiritual arrows, Seele Schneider, and utility items for ranged engagements.",
+    abilities: "Expert marksmanship, Hirenkyaku movement, spiritual thread perception, and high reiatsu control.",
+    zanpakuto: { name: "", activationCommand: "", shikai: "", bankai: "" },
+    stats: { health: 64, attack: 82, defense: 68, speed: 76, reiatsu: 88 },
+    updatedByName: "Sistema",
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "sample-kaien-shiba",
+    name: "Kaien Shiba",
+    race: "Shinigami",
+    affiliation: "Shinigami",
+    ability: "",
+    image: "",
+    notes: "Lieutenant archive profile",
+    overview: "A loyal Shinigami officer known for balanced combat instincts and strong command presence.",
+    history: "Served as a lieutenant in the Gotei 13 and left a record of mentorship, duty, and sacrifice.",
+    equipment: "Standard Shinigami robes, zanpakuto, and division field gear.",
+    abilities: "Zanjutsu, Hoho, spiritual pressure control, and water-based release techniques.",
+    zanpakuto: {
+      name: "Nejibana",
+      activationCommand: "Rankle the seas and skies",
+      shikai: "Nejibana changes shape and channels water into piercing and sweeping attacks.",
+      bankai: "Unknown or unrecorded.",
+    },
+    stats: { health: 78, attack: 72, defense: 70, speed: 74, reiatsu: 80 },
+    updatedByName: "Sistema",
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "sample-nelliel",
+    name: "Nelliel Tu Odelschwanck",
+    race: "Arrancar",
+    affiliation: "Arrancar",
+    ability: "",
+    image: "",
+    notes: "Former Espada profile",
+    overview: "A powerful Arrancar with a composed temperament and tremendous spiritual pressure.",
+    history: "Former Espada records describe a warrior displaced by betrayal and later defined by restraint.",
+    equipment: "Arrancar uniform, broken mask remains, and resurreccion weaponry.",
+    abilities: "Cero Doble, high-speed combat, lance techniques, Hierro, and overwhelming reiatsu.",
+    zanpakuto: {
+      name: "Gamuza",
+      activationCommand: "Declare",
+      shikai: "Arrancar do not use Shikai; this field can describe Resurreccion notes if desired.",
+      bankai: "Arrancar do not use Bankai; this field can hold Segunda Etapa or advanced release notes.",
+    },
+    stats: { health: 86, attack: 88, defense: 83, speed: 78, reiatsu: 90 },
+    updatedByName: "Sistema",
+    updatedAt: new Date().toISOString(),
+  },
+];

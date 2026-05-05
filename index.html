@@ -10,11 +10,12 @@
     <div id="appPage" class="app-shell">
       <header class="topbar">
         <button id="menuToggle" class="icon-button menu-toggle" aria-label="Open menu">☰</button>
-        <a class="site-title" href="#Shinigamis">Thousand Soul's War</a>
+        <a class="site-title" href="#Shinigami">Thousand Soul's War</a>
         <nav id="mainNav" class="main-nav" aria-label="Main navigation">
-          <button class="nav-link active" data-page="Shinigamis">Shinigamis</button>
+          <button class="nav-link active" data-page="Shinigami">Shinigami</button>
           <button class="nav-link" data-page="Quincy">Quincy</button>
           <button class="nav-link" data-page="Arrancar">Arrancar</button>
+          <button class="nav-link" data-page="NPC">NPC</button>
           <button id="adminNav" class="nav-link hidden" data-page="Admin">Admin</button>
         </nav>
         <div id="authArea" class="auth-area">
@@ -63,7 +64,7 @@
         <aside class="sidebar">
           <label class="search-label">
             Search character
-            <input id="searchInput" type="search" placeholder="Name, race, ability..." />
+            <input id="searchInput" type="search" placeholder="Nombre, raza, habilidad..." />
           </label>
           <div id="characterList" class="character-list"></div>
           <button id="newCharacterButton" class="primary-action full hidden">New character</button>
@@ -91,7 +92,7 @@
       <form class="editor-form">
         <div class="form-grid">
           <label>
-            Name
+            Nombre
             <input name="name" required />
           </label>
           <label>
@@ -103,28 +104,33 @@
             </select>
           </label>
           <label>
-            Affiliation
-            <input name="affiliation" required />
+            Afiliacion
+            <select name="affiliation" required>
+              <option>Quincy</option>
+              <option>Shinigami</option>
+              <option>Arrancar</option>
+              <option>NPC</option>
+            </select>
           </label>
-          <label>
+          <label class="ability-field">
             Habilidad personal
             <input name="ability" required />
+          </label>
+          <label>
+            Vida
+            <input name="health" type="number" min="0" required />
           </label>
           <label>
             Ataque
             <input name="attack" type="number" min="0" required />
           </label>
           <label>
-            Defensa
+            Bloqueo
             <input name="defense" type="number" min="0" required />
           </label>
           <label>
             Velocidad
             <input name="speed" type="number" min="0" required />
-          </label>
-          <label>
-            Vida
-            <input name="health" type="number" min="0" required />
           </label>
           <label>
             Reiatsu
@@ -135,30 +141,30 @@
             <input name="image" placeholder="assets/uryu-reference.png or https://..." />
           </label>
           <label class="wide-field">
-            Notes
+            Notas
             <textarea name="notes" rows="4"></textarea>
           </label>
           <label class="wide-field">
-            Overview
+            Descripcion general
             <textarea name="overview" rows="5"></textarea>
           </label>
           <label class="wide-field">
-            History
+            Historia
             <textarea name="history" rows="6"></textarea>
           </label>
           <label class="wide-field">
-            Equipment
+            Equipamento
             <textarea name="equipment" rows="4"></textarea>
           </label>
           <label class="wide-field">
-            Habilidades
+            Habilidades de raza
             <textarea name="abilities" rows="5"></textarea>
           </label>
           <div class="wide-field zanpakuto-fields">
             <h3>Zanpakuto</h3>
             <div class="form-grid nested-fields">
               <label>
-                Nombre de Zanpakuto
+                Nombre
                 <input name="zanpakutoName" />
               </label>
               <label>
@@ -185,7 +191,7 @@
     </template>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js?v=6"></script>
-    <script src="app.js?v=6"></script>
+    <script src="supabase-config.js?v=8"></script>
+    <script type="module" src="app.js?v=8"></script>
   </body>
 </html>
