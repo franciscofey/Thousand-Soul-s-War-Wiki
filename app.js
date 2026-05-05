@@ -195,26 +195,39 @@ async function handleLogin(event) {
 
   const email = els.loginEmail.value.trim().toLowerCase();
   const password = els.loginPassword.value;
-  const { error } = await db.auth.signInWithPassword({ email, password });
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
 
   if (error) {
     els.loginError.textContent = error.message;
     return;
   }
 
+  currentSession = data.session;
+  await refreshCurrentUser();
   els.loginForm.reset();
   els.loginPage.classList.add("hidden");
   els.loginError.textContent = "";
+  render();
 }
 
-async function handleLogout() {
-  if (db) await db.auth.signOut();
+async function handleLogout(event) {
+  event?.preventDefault();
+  event?.stopPropagation();
+
   currentUser = null;
   currentSession = null;
   selectedCharacterId = null;
   editingCharacterId = null;
   els.loginPage.classList.add("hidden");
   render();
+
+  if (db) {
+    const { error } = await db.auth.signOut();
+    if (error) {
+      await db.auth.signOut({ scope: "local" });
+    }
+    clearSupabaseSessionCache();
+  }
 }
 
 async function handleProfileSave(event) {
@@ -842,6 +855,12 @@ function formatText(value) {
 
 function showNotice(message) {
   els.characterList.innerHTML = `<div class="empty-state">${escapeHtml(message)}</div>`;
+}
+
+function clearSupabaseSessionCache() {
+  Object.keys(localStorage)
+    .filter((key) => key.startsWith("sb-") && key.endsWith("-auth-token"))
+    .forEach((key) => localStorage.removeItem(key));
 }
 
 function makeId() {
