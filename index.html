@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thousand Soul's War Wiki</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="appPage" class="app-shell">
+      <header class="topbar">
+        <button id="menuToggle" class="icon-button menu-toggle" aria-label="Open menu">☰</button>
+        <a class="site-title" href="#Shinigamis">Thousand Soul's War</a>
+        <nav id="mainNav" class="main-nav" aria-label="Main navigation">
+          <button class="nav-link active" data-page="Shinigamis">Shinigamis</button>
+          <button class="nav-link" data-page="Quincy">Quincy</button>
+          <button class="nav-link" data-page="Arrancar">Arrancar</button>
+          <button id="adminNav" class="nav-link hidden" data-page="Admin">Admin</button>
+        </nav>
+        <div id="authArea" class="auth-area">
+          <button id="loginToggle" class="nav-link auth-toggle">Login</button>
+          <section id="loginPage" class="login-shell hidden" aria-labelledby="loginTitle">
+            <div class="login-panel">
+              <h1 id="loginTitle">Login</h1>
+              <p class="login-copy">Editor access</p>
+
+              <form id="loginForm" class="stacked-form">
+                <label>
+                  Email
+                  <input id="loginEmail" type="email" autocomplete="email" required />
+                </label>
+                <label>
+                  Password
+                  <input id="loginPassword" type="password" autocomplete="current-password" required />
+                </label>
+                <p id="loginError" class="form-error" role="alert"></p>
+                <button type="submit" class="primary-action">Login</button>
+              </form>
+            </div>
+          </section>
+        </div>
+        <div class="user-area hidden">
+          <button id="profileButton" class="ghost-action"></button>
+          <button id="logoutButton" class="ghost-action">Sign out</button>
+        </div>
+      </header>
+
+      <section id="profilePanel" class="profile-panel hidden" aria-label="Profile settings">
+        <form id="profileForm" class="profile-form">
+          <label>
+            Username
+            <input id="profileUsername" type="text" required minlength="2" />
+          </label>
+          <label>
+            New password
+            <input id="profilePassword" type="password" minlength="4" placeholder="Leave blank to keep current" />
+          </label>
+          <button type="submit" class="primary-action small">Save profile</button>
+        </form>
+      </section>
+
+      <main class="content-grid">
+        <aside class="sidebar">
+          <label class="search-label">
+            Search character
+            <input id="searchInput" type="search" placeholder="Name, race, ability..." />
+          </label>
+          <div id="characterList" class="character-list"></div>
+          <button id="newCharacterButton" class="primary-action full hidden">New character</button>
+        </aside>
+
+        <section id="wikiPage" class="wiki-page"></section>
+        <section id="adminPage" class="admin-page hidden"></section>
+      </main>
+    </div>
+
+    <template id="characterTemplate">
+      <article class="character-sheet">
+        <div class="sheet-title">
+          <h2></h2>
+          <p></p>
+        </div>
+        <div class="portrait-wrap">
+          <img class="portrait" alt="" />
+        </div>
+        <div class="facts"></div>
+      </article>
+    </template>
+
+    <template id="editorTemplate">
+      <form class="editor-form">
+        <div class="form-grid">
+          <label>
+            Name
+            <input name="name" required />
+          </label>
+          <label>
+            Raza
+            <select name="race" required>
+              <option>Shinigami</option>
+              <option>Quincy</option>
+              <option>Arrancar</option>
+            </select>
+          </label>
+          <label>
+            Affiliation
+            <input name="affiliation" required />
+          </label>
+          <label>
+            Habilidad personal
+            <input name="ability" required />
+          </label>
+          <label>
+            Ataque
+            <input name="attack" type="number" min="0" required />
+          </label>
+          <label>
+            Defensa
+            <input name="defense" type="number" min="0" required />
+          </label>
+          <label>
+            Velocidad
+            <input name="speed" type="number" min="0" required />
+          </label>
+          <label>
+            Vida
+            <input name="health" type="number" min="0" required />
+          </label>
+          <label>
+            Reiatsu
+            <input name="reiatsu" type="number" min="0" required />
+          </label>
+          <label class="wide-field">
+            Image URL
+            <input name="image" placeholder="assets/uryu-reference.png or https://..." />
+          </label>
+          <label class="wide-field">
+            Notes
+            <textarea name="notes" rows="4"></textarea>
+          </label>
+          <label class="wide-field">
+            Overview
+            <textarea name="overview" rows="5"></textarea>
+          </label>
+          <label class="wide-field">
+            History
+            <textarea name="history" rows="6"></textarea>
+          </label>
+          <label class="wide-field">
+            Equipment
+            <textarea name="equipment" rows="4"></textarea>
+          </label>
+          <label class="wide-field">
+            Habilidades
+            <textarea name="abilities" rows="5"></textarea>
+          </label>
+          <div class="wide-field zanpakuto-fields">
+            <h3>Zanpakuto</h3>
+            <div class="form-grid nested-fields">
+              <label>
+                Nombre de Zanpakuto
+                <input name="zanpakutoName" />
+              </label>
+              <label>
+                Comando de activacion
+                <input name="activationCommand" />
+              </label>
+              <label>
+                Shikai
+                <textarea name="shikai" rows="4"></textarea>
+              </label>
+              <label class="wide-field">
+                Bankai
+                <textarea name="bankai" rows="4"></textarea>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="editor-actions">
+          <button type="submit" class="primary-action small">Save file</button>
+          <button type="button" class="ghost-action cancel-edit">Cancel</button>
+          <button type="button" class="danger-action delete-character">Delete</button>
+        </div>
+      </form>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
