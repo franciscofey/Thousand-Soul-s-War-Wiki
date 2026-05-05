@@ -1,2 +1,2 @@
-window.TSW_SUPABASE_URL = "YOUR_PROJECT_URL";
-window.TSW_SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+window.TSW_SUPABASE_URL = "https://mpwgpgnjjieiegccehwl.supabase.co/rest/v1/";
+window.TSW_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wd2dwZ25qamllaWVnY2NlaHdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MzYyMTYsImV4cCI6MjA5MzUxMjIxNn0.rK7MMrQRIGgDAzQLkSi2SrN2hndhcroca5S4KerdAIM";
