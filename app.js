@@ -1,14 +1,12 @@
-const STORAGE_KEYS = {
-  users: "tsw_users",
-  characters: "tsw_characters",
-  session: "tsw_session",
-};
+const SUPABASE_IS_CONFIGURED =
+  window.TSW_SUPABASE_URL &&
+  window.TSW_SUPABASE_ANON_KEY &&
+  !window.TSW_SUPABASE_URL.includes("YOUR_PROJECT_URL") &&
+  !window.TSW_SUPABASE_ANON_KEY.includes("YOUR_SUPABASE_ANON_KEY");
 
-const starterUsers = [
-  { email: "gm@quincy.com", password: "gmquincy", username: "GM Quincy", role: "admin" },
-  { email: "elses@quincy.com", password: "elsesquincy", username: "Elses", role: "admin" },
-  { email: "sigma@quincy.com", password: "sigmaquincy", username: "Sigma", role: "main-admin" },
-];
+const db = SUPABASE_IS_CONFIGURED
+  ? window.supabase.createClient(window.TSW_SUPABASE_URL, window.TSW_SUPABASE_ANON_KEY)
+  : null;
 
 const starterCharacters = [
   {
@@ -74,10 +72,10 @@ const factionCopy = {
   Arrancar: "Hueco Mundo files for Arrancar, resurrecion notes, and battle statistics.",
 };
 
-let users = loadCollection(STORAGE_KEYS.users, starterUsers);
-let characters = loadCollection(STORAGE_KEYS.characters, starterCharacters).map(normalizeCharacter);
-saveCollection(STORAGE_KEYS.characters, characters);
-let currentUser = getSessionUser();
+let profiles = [];
+let characters = starterCharacters.map(normalizeCharacter);
+let currentUser = null;
+let currentSession = null;
 let currentPage = "Shinigamis";
 let selectedCharacterId = null;
 let editingCharacterId = null;
@@ -111,33 +109,26 @@ const els = {
   editorTemplate: document.querySelector("#editorTemplate"),
 };
 
-function loadCollection(key, fallback) {
-  const stored = localStorage.getItem(key);
-  if (stored) return JSON.parse(stored);
-  localStorage.setItem(key, JSON.stringify(fallback));
-  return fallback;
-}
-
-function saveCollection(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
-function getSessionUser() {
-  const email = localStorage.getItem(STORAGE_KEYS.session);
-  return users.find((user) => user.email === email) || null;
-}
-
-function isEditor() {
-  return currentUser && ["admin", "main-admin"].includes(currentUser.role);
-}
-
-function isMainAdmin() {
-  return currentUser?.email === "sigma@quincy.com" && currentUser?.role === "main-admin";
-}
-
-function init() {
+async function init() {
   bindEvents();
   render();
+
+  if (!SUPABASE_IS_CONFIGURED) {
+    showNotice("Supabase is not configured yet. The site is showing sample data only.");
+    return;
+  }
+
+  const { data } = await db.auth.getSession();
+  currentSession = data.session;
+  await refreshCurrentUser();
+  await loadCharacters();
+
+  db.auth.onAuthStateChange(async (_event, session) => {
+    currentSession = session;
+    await refreshCurrentUser();
+    await loadCharacters();
+    render();
+  });
 }
 
 function bindEvents() {
@@ -161,79 +152,110 @@ function bindEvents() {
   });
 }
 
-function handleLogin(event) {
-  event.preventDefault();
-  const email = els.loginEmail.value.trim().toLowerCase();
-  const password = els.loginPassword.value;
-  const user = users.find((candidate) => candidate.email === email && candidate.password === password);
-
-  if (!user) {
-    els.loginError.textContent = "Email or password is incorrect.";
+async function refreshCurrentUser() {
+  if (!currentSession?.user) {
+    currentUser = null;
     return;
   }
 
-  currentUser = user;
-  localStorage.setItem(STORAGE_KEYS.session, user.email);
+  const { data, error } = await db
+    .from("profiles")
+    .select("id,email,username,role")
+    .eq("id", currentSession.user.id)
+    .single();
+
+  if (error) {
+    currentUser = null;
+    showNotice(error.message);
+    return;
+  }
+
+  currentUser = data;
+}
+
+async function loadCharacters() {
+  if (!db) return;
+
+  const { data, error } = await db.from("characters").select("*").order("name", { ascending: true });
+  if (error) {
+    showNotice(error.message);
+    return;
+  }
+
+  characters = data.map(characterFromRow);
+  render();
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  if (!db) {
+    els.loginError.textContent = "Configure Supabase first.";
+    return;
+  }
+
+  const email = els.loginEmail.value.trim().toLowerCase();
+  const password = els.loginPassword.value;
+  const { error } = await db.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    els.loginError.textContent = error.message;
+    return;
+  }
+
   els.loginForm.reset();
   els.loginPage.classList.add("hidden");
   els.loginError.textContent = "";
-  render();
 }
 
-function handleLogout() {
+async function handleLogout() {
+  if (db) await db.auth.signOut();
   currentUser = null;
+  currentSession = null;
   selectedCharacterId = null;
   editingCharacterId = null;
-  localStorage.removeItem(STORAGE_KEYS.session);
   els.loginPage.classList.add("hidden");
   render();
 }
 
-function handleProfileSave(event) {
+async function handleProfileSave(event) {
   event.preventDefault();
+  if (!currentUser) return;
+
   const username = els.profileUsername.value.trim();
   const password = els.profilePassword.value;
+  const { error: profileError } = await db.from("profiles").update({ username }).eq("id", currentUser.id);
 
-  users = users.map((user) => {
-    if (user.email !== currentUser.email) return user;
-    return { ...user, username, password: password || user.password };
-  });
+  if (profileError) {
+    showNotice(profileError.message);
+    return;
+  }
 
-  saveCollection(STORAGE_KEYS.users, users);
-  currentUser = getSessionUser();
+  if (password) {
+    const { error: passwordError } = await db.auth.updateUser({ password });
+    if (passwordError) {
+      showNotice(passwordError.message);
+      return;
+    }
+  }
+
   els.profilePassword.value = "";
   els.profilePanel.classList.add("hidden");
-  render();
-}
-
-function showLogin() {
-  els.loginPage.classList.remove("hidden");
-  els.appPage.classList.remove("hidden");
-  render();
-}
-
-function showApp() {
-  els.loginPage.classList.add("hidden");
-  els.appPage.classList.remove("hidden");
+  await refreshCurrentUser();
   render();
 }
 
 function render() {
-  if (!currentUser && currentPage === "Admin") {
-    currentPage = "Shinigamis";
-  }
+  if (!currentUser && currentPage === "Admin") currentPage = "Shinigamis";
 
   els.appPage.classList.remove("hidden");
   els.profilePanel.classList.add("hidden");
   els.authArea.classList.toggle("hidden", Boolean(currentUser));
   els.userArea.classList.toggle("hidden", !currentUser);
-  if (currentUser) {
-    els.loginPage.classList.add("hidden");
-  }
+  if (currentUser) els.loginPage.classList.add("hidden");
 
   if (currentUser) {
-    els.profileButton.textContent = currentUser.username;
-    els.profileUsername.value = currentUser.username;
+    els.profileButton.textContent = currentUser.username || currentUser.email;
+    els.profileUsername.value = currentUser.username || "";
   } else {
     els.profileButton.textContent = "";
     els.profileUsername.value = "";
@@ -262,6 +284,14 @@ function singularRace(page) {
   return page === "Shinigamis" ? "Shinigami" : page;
 }
 
+function isEditor() {
+  return currentUser && ["admin", "main-admin"].includes(currentUser.role);
+}
+
+function isMainAdmin() {
+  return currentUser?.role === "main-admin";
+}
+
 function getFilteredCharacters() {
   const query = els.searchInput.value.trim().toLowerCase();
   return characters
@@ -282,9 +312,7 @@ function getFilteredCharacters() {
         character.zanpakuto?.shikai,
         character.zanpakuto?.bankai,
         character.notes,
-      ]
-        .join(" ")
-        .toLowerCase();
+      ].join(" ").toLowerCase();
       return searchable.includes(query);
     });
 }
@@ -306,7 +334,7 @@ function renderCharacterList() {
     button.className = "character-tab";
     button.classList.toggle("active", character.id === selectedCharacterId);
     button.innerHTML = `
-        <span class="tab-avatar">${escapeHtml(getInitials(character.name))}</span>
+      <span class="tab-avatar">${escapeHtml(getInitials(character.name))}</span>
       <span>
         <span class="tab-name">${escapeHtml(character.name)}</span>
         <span class="tab-meta">${escapeHtml(character.affiliation)}</span>
@@ -446,17 +474,6 @@ function createDetailsPanel(character) {
   return panel;
 }
 
-function createStatLine(label, value) {
-  const width = Math.max(0, Math.min(100, Number(value)));
-  return `
-    <div class="stat-line">
-      <strong>${label}</strong>
-      <span class="bar"><span style="width: ${width}%"></span></span>
-      <span>${width}</span>
-    </div>
-  `;
-}
-
 function createEmptyPortrait(character) {
   const fallback = document.createElement("div");
   fallback.className = "empty-portrait portrait";
@@ -515,20 +532,18 @@ function createEditor(character) {
     editingCharacterId = null;
     renderWikiPage();
   });
-  form.querySelector(".delete-character").addEventListener("click", () => {
-    characters = characters.filter((candidate) => candidate.id !== character.id);
-    saveCollection(STORAGE_KEYS.characters, characters);
-    selectedCharacterId = null;
-    editingCharacterId = null;
-    render();
+  form.querySelector(".delete-character").addEventListener("click", async () => {
+    await deleteCharacter(character.id);
   });
   form.addEventListener("submit", (event) => saveCharacter(event, character));
 
   return form;
 }
 
-function saveCharacter(event, existingCharacter) {
+async function saveCharacter(event, existingCharacter) {
   event.preventDefault();
+  if (!isEditor()) return;
+
   const form = event.currentTarget;
   const updated = {
     id: existingCharacter?.id || makeId(),
@@ -559,17 +574,31 @@ function saveCharacter(event, existingCharacter) {
     },
   };
 
-  if (existingCharacter) {
-    characters = characters.map((character) => (character.id === existingCharacter.id ? updated : character));
-  } else {
-    characters = [...characters, updated];
+  const row = characterToRow(updated);
+  const { error } = await db.from("characters").upsert(row);
+  if (error) {
+    showNotice(error.message);
+    return;
   }
 
-  saveCollection(STORAGE_KEYS.characters, characters);
   currentPage = updated.race === "Shinigami" ? "Shinigamis" : updated.race;
   selectedCharacterId = updated.id;
   editingCharacterId = null;
-  render();
+  await loadCharacters();
+}
+
+async function deleteCharacter(characterId) {
+  if (!isEditor()) return;
+
+  const { error } = await db.from("characters").delete().eq("id", characterId);
+  if (error) {
+    showNotice(error.message);
+    return;
+  }
+
+  selectedCharacterId = null;
+  editingCharacterId = null;
+  await loadCharacters();
 }
 
 function renderAdminPage() {
@@ -587,7 +616,7 @@ function renderAdminPage() {
     <div class="page-heading">
       <div>
         <h2>Admin</h2>
-        <p>Create users, remove accounts, and decide who can edit character files.</p>
+        <p>Manage editor accounts and character files stored in Supabase.</p>
       </div>
     </div>
     <div class="admin-grid">
@@ -595,7 +624,7 @@ function renderAdminPage() {
         <h3>Create account</h3>
         <label>Email <input name="email" type="email" required /></label>
         <label>Username <input name="username" required /></label>
-        <label>Password <input name="password" type="password" required minlength="4" /></label>
+        <label>Password <input name="password" type="password" required minlength="6" /></label>
         <label>Role
           <select name="role">
             <option value="user">User</option>
@@ -603,6 +632,7 @@ function renderAdminPage() {
           </select>
         </label>
         <button class="primary-action" type="submit">Create account</button>
+        <p class="login-copy">Requires the Supabase Edge Function in <code>supabase/functions/create-user</code>.</p>
       </form>
       <section class="admin-card">
         <h3>Accounts</h3>
@@ -616,58 +646,68 @@ function renderAdminPage() {
   `;
 
   els.adminPage.querySelector("#accountForm").addEventListener("submit", handleCreateAccount);
-  renderAccounts();
+  loadProfiles();
   renderAdminCharacterIndex();
 }
 
-function handleCreateAccount(event) {
+async function handleCreateAccount(event) {
   event.preventDefault();
   const form = event.currentTarget;
-  const email = form.elements.email.value.trim().toLowerCase();
 
-  if (users.some((user) => user.email === email)) {
-    form.elements.email.setCustomValidity("This email already exists.");
-    form.elements.email.reportValidity();
-    return;
-  }
-
-  form.elements.email.setCustomValidity("");
-  users = [
-    ...users,
-    {
-      email,
+  const { error } = await db.functions.invoke("create-user", {
+    body: {
+      email: form.elements.email.value.trim().toLowerCase(),
       username: form.elements.username.value.trim(),
       password: form.elements.password.value,
       role: form.elements.role.value,
     },
-  ];
-  saveCollection(STORAGE_KEYS.users, users);
+  });
+
+  if (error) {
+    showNotice(error.message);
+    return;
+  }
+
   form.reset();
+  await loadProfiles();
+}
+
+async function loadProfiles() {
+  const { data, error } = await db.from("profiles").select("id,email,username,role").order("email", { ascending: true });
+  if (error) {
+    showNotice(error.message);
+    return;
+  }
+  profiles = data;
   renderAccounts();
 }
 
 function renderAccounts() {
   const accountList = els.adminPage.querySelector("#accountList");
+  if (!accountList) return;
   accountList.innerHTML = "";
 
-  users.forEach((user) => {
+  profiles.forEach((profile) => {
     const row = document.createElement("div");
     row.className = "account-row";
     row.innerHTML = `
       <div>
-        <strong>${escapeHtml(user.username)}</strong>
-        <span>${escapeHtml(user.email)} - ${escapeHtml(user.role)}</span>
+        <strong>${escapeHtml(profile.username || profile.email)}</strong>
+        <span>${escapeHtml(profile.email || "")} - ${escapeHtml(profile.role)}</span>
       </div>
     `;
     const deleteButton = document.createElement("button");
     deleteButton.className = "danger-action";
     deleteButton.type = "button";
     deleteButton.textContent = "Delete";
-    deleteButton.disabled = user.email === currentUser.email;
-    deleteButton.addEventListener("click", () => {
-      users = users.filter((candidate) => candidate.email !== user.email);
-      saveCollection(STORAGE_KEYS.users, users);
-      renderAccounts();
+    deleteButton.disabled = profile.id === currentUser.id;
+    deleteButton.addEventListener("click", async () => {
+      const { error } = await db.functions.invoke("delete-user", { body: { userId: profile.id } });
+      if (error) {
+        showNotice(error.message);
+        return;
+      }
+      await loadProfiles();
     });
     row.append(deleteButton);
     accountList.append(row);
@@ -700,6 +740,60 @@ function renderAdminCharacterIndex() {
     row.append(editButton);
     adminCharacterList.append(row);
   });
+}
+
+function characterFromRow(row) {
+  return normalizeCharacter({
+    id: row.id,
+    name: row.name,
+    race: row.race,
+    affiliation: row.affiliation,
+    ability: row.ability,
+    image: row.image,
+    notes: row.notes,
+    overview: row.overview,
+    history: row.history,
+    equipment: row.equipment,
+    abilities: row.abilities,
+    zanpakuto: {
+      name: row.zanpakuto_name,
+      activationCommand: row.activation_command,
+      shikai: row.shikai,
+      bankai: row.bankai,
+    },
+    stats: {
+      attack: row.attack,
+      defense: row.defense,
+      speed: row.speed,
+      health: row.health,
+      reiatsu: row.reiatsu,
+    },
+  });
+}
+
+function characterToRow(character) {
+  return {
+    id: character.id,
+    name: character.name,
+    race: character.race,
+    affiliation: character.affiliation,
+    ability: character.ability,
+    image: character.image,
+    notes: character.notes,
+    overview: character.overview,
+    history: character.history,
+    equipment: character.equipment,
+    abilities: character.abilities,
+    zanpakuto_name: character.zanpakuto.name,
+    activation_command: character.zanpakuto.activationCommand,
+    shikai: character.zanpakuto.shikai,
+    bankai: character.zanpakuto.bankai,
+    attack: character.stats.attack,
+    defense: character.stats.defense,
+    speed: character.stats.speed,
+    health: character.stats.health,
+    reiatsu: character.stats.reiatsu,
+  };
 }
 
 function getInitials(name) {
@@ -743,7 +837,11 @@ function syncZanpakutoFields(form) {
 }
 
 function formatText(value) {
-  return escapeHtml(value).replace(/\n/g, "<br>");
+  return escapeHtml(value || "").replace(/\n/g, "<br>");
+}
+
+function showNotice(message) {
+  els.characterList.innerHTML = `<div class="empty-state">${escapeHtml(message)}</div>`;
 }
 
 function makeId() {
@@ -752,7 +850,7 @@ function makeId() {
 }
 
 function escapeHtml(value) {
-  return value.replace(/[&<>"']/g, (character) => {
+  return String(value).replace(/[&<>"']/g, (character) => {
     return {
       "&": "&amp;",
       "<": "&lt;",
