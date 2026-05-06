@@ -29,6 +29,10 @@ export function normalizeCharacter(character) {
     abilities: character.abilities || "",
     updatedByName: character.updatedByName || "",
     updatedAt: character.updatedAt || character.updated_at || "",
+    record: {
+      wins: Number(character.record?.wins || 0),
+      losses: Number(character.record?.losses || 0),
+    },
     zanpakuto: {
       name: character.zanpakuto?.name || "",
       activationCommand: character.zanpakuto?.activationCommand || "",
@@ -60,6 +64,10 @@ export function characterFromRow(row) {
     abilities: row.abilities,
     updatedByName: row.updated_by_name,
     updatedAt: row.updated_at,
+    record: {
+      wins: row.wins,
+      losses: row.losses,
+    },
     zanpakuto: {
       name: row.zanpakuto_name,
       activationCommand: row.activation_command,
@@ -123,6 +131,8 @@ export function characterToRow(character, currentUser) {
     defense: character.stats.defense,
     speed: character.stats.speed,
     reiatsu: character.stats.reiatsu,
+    wins: character.record.wins,
+    losses: character.record.losses,
     updated_by_name: currentUser?.username || currentUser?.email || "",
   };
 }

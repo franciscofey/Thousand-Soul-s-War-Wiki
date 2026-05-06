@@ -1,6 +1,12 @@
 alter table public.characters
 add column if not exists updated_by_name text not null default '';
 
+alter table public.characters
+add column if not exists wins integer not null default 0;
+
+alter table public.characters
+add column if not exists losses integer not null default 0;
+
 update public.characters
 set affiliation = race
 where affiliation not in ('Quincy', 'Shinigami', 'Arrancar', 'NPC')

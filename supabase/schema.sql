@@ -30,6 +30,8 @@ create table if not exists public.characters (
   speed integer not null default 0,
   health integer not null default 0,
   reiatsu integer not null default 0,
+  wins integer not null default 0,
+  losses integer not null default 0,
   updated_by_name text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -169,7 +171,7 @@ with check (public.is_main_admin());
 
 insert into public.characters (
   name, race, affiliation, ability, image, notes, overview, history, equipment, abilities,
-  zanpakuto_name, activation_command, shikai, bankai, attack, defense, speed, health, reiatsu, updated_by_name
+  zanpakuto_name, activation_command, shikai, bankai, attack, defense, speed, health, reiatsu, wins, losses, updated_by_name
 ) values
 (
   'Uryu Ishida', 'Quincy', 'Quincy', '{"name":"Heilig Pfeil","description":"Precision and spiritual archery."}', 'assets/uryu-reference.png',
@@ -178,7 +180,7 @@ insert into public.characters (
   'Raised within the Quincy tradition, Uryu keeps detailed records of his training, rivalries, and wartime decisions.',
   'Quincy bow, spiritual arrows, Seele Schneider, and utility items for ranged engagements.',
   'Expert marksmanship, Hirenkyaku movement, spiritual thread perception, and high reiatsu control.',
-  '', '', '', '', 82, 68, 76, 64, 88, 'Sistema'
+  '', '', '', '', 82, 68, 76, 64, 88, 0, 0, 'Sistema'
 ),
 (
   'Kaien Shiba', 'Shinigami', 'Shinigami', '', '',
@@ -189,7 +191,7 @@ insert into public.characters (
   'Zanjutsu, Hoho, spiritual pressure control, and water-based release techniques.',
   'Nejibana', 'Rankle the seas and skies',
   'Nejibana changes shape and channels water into piercing and sweeping attacks.',
-  'Unknown or unrecorded.', 72, 70, 74, 78, 80, 'Sistema'
+  'Unknown or unrecorded.', 72, 70, 74, 78, 80, 0, 0, 'Sistema'
 ),
 (
   'Nelliel Tu Odelschwanck', 'Arrancar', 'Arrancar', '', '',
@@ -201,7 +203,7 @@ insert into public.characters (
   'Gamuza', 'Declare',
   'Arrancar do not use Shikai; this field can describe Resurreccion notes if desired.',
   'Arrancar do not use Bankai; this field can hold Segunda Etapa or advanced release notes.',
-  88, 83, 78, 86, 90, 'Sistema'
+  88, 83, 78, 86, 90, 0, 0, 'Sistema'
 );
 
 -- After creating the three Auth users in Supabase, run this once:

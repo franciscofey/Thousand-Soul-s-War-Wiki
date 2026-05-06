@@ -367,6 +367,8 @@ function createCharacterSheet(character) {
     ["Bloqueo", character.stats.defense],
     ["Velocidad", character.stats.speed],
     ["Reiatsu", character.stats.reiatsu],
+    ["Victorias", character.record.wins],
+    ["Derrotas", character.record.losses],
     ["Ultima edicion", character.updatedByName],
     ["Fecha", formatSpanishDate(character.updatedAt)],
   );
@@ -494,6 +496,7 @@ function createEditor(character) {
     abilities: "",
     zanpakuto: { name: "", activationCommand: "", shikai: "", bankai: "" },
     stats: { health: 50, attack: 50, defense: 50, speed: 50, reiatsu: 50 },
+    record: { wins: 0, losses: 0 },
   };
   const normalizedData = normalizeCharacter(data);
 
@@ -508,6 +511,8 @@ function createEditor(character) {
   form.elements.speed.value = normalizedData.stats.speed;
   form.elements.reiatsu.value = normalizedData.stats.reiatsu;
   form.elements.image.value = normalizedData.image;
+  form.elements.wins.value = normalizedData.record.wins;
+  form.elements.losses.value = normalizedData.record.losses;
   form.elements.notes.value = normalizedData.notes;
   form.elements.overview.value = normalizedData.overview;
   form.elements.history.value = normalizedData.history;
@@ -547,6 +552,7 @@ async function saveCharacter(event, existingCharacter) {
 
   const form = event.currentTarget;
   const race = form.elements.race.value;
+  const uploadedImage = await readUploadedImage(form.elements.imageFile.files[0]);
   const updated = {
     id: existingCharacter?.id || makeId(),
     name: form.elements.name.value.trim(),
@@ -559,7 +565,7 @@ async function saveCharacter(event, existingCharacter) {
             description: form.elements.personalAbilityDescription.value.trim(),
           }
         : { name: "", description: "" },
-    image: form.elements.image.value.trim(),
+    image: uploadedImage || form.elements.image.value.trim(),
     notes: form.elements.notes.value.trim(),
     overview: form.elements.overview.value.trim(),
     history: form.elements.history.value.trim(),
@@ -579,6 +585,10 @@ async function saveCharacter(event, existingCharacter) {
       defense: Number(form.elements.defense.value),
       speed: Number(form.elements.speed.value),
       reiatsu: Number(form.elements.reiatsu.value),
+    },
+    record: {
+      wins: Number(form.elements.wins.value),
+      losses: Number(form.elements.losses.value),
     },
   };
 
@@ -763,6 +773,17 @@ function syncRaceFields(form) {
 
 function showNotice(message) {
   els.characterList.innerHTML = `<div class="empty-state">${escapeHtml(message)}</div>`;
+}
+
+function readUploadedImage(file) {
+  if (!file) return Promise.resolve("");
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(reader.result));
+    reader.addEventListener("error", () => reject(reader.error));
+    reader.readAsDataURL(file);
+  });
 }
 
 init();
